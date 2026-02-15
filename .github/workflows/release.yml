@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-20.04
+    runs-on: arc-awx-ee
     name: Release
     steps:
       - uses: actions/checkout@v2
