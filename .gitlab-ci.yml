@@ -1,0 +1,37 @@
+stages:
+  - build
+
+variables:
+  IMAGE_NAME: "devlableo-awx-ee"
+  REGISTRY: "ghcr.io"
+  IMAGE_TAG: "${REGISTRY}/${CI_PROJECT_NAMESPACE}/${IMAGE_NAME}"
+
+build-and-push:
+  stage: build
+  image: quay.io/ansible/ansible-runner:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_DRIVER: overlay2
+    DOCKER_TLS_CERTDIR: ""
+  before_script:
+    - apt-get update && apt-get install -y ansible-builder docker.io
+  script:
+    # Build the execution environment image
+    - ansible-builder build -v3 -t ${IMAGE_TAG}:${CI_COMMIT_SHA} -t ${IMAGE_TAG}:latest --container-runtime=docker
+    
+    # Login to GitHub Container Registry
+    - echo "${GITHUB_TOKEN}" | docker login -u "${GITHUB_USERNAME}" --password-stdin ${REGISTRY}
+    
+    # Push the image to GitHub Container Registry
+    - docker push ${IMAGE_TAG}:${CI_COMMIT_SHA}
+    - docker push ${IMAGE_TAG}:latest
+    
+  only:
+    - main
+    - tags
+  tags:
+    - docker
+
+# For more information on building and pushing execution environments,
+# see README.md in this repository
